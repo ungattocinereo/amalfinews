@@ -1,0 +1,217 @@
+"""
+WordPress-specific crawler
+Handles WordPress sites with RSS feed support
+"""
+
+import logging
+import feedparser
+from datetime import datetime
+from typing import List
+
+from src.crawlers.base_crawler import BaseCrawler
+from src.core.models import RawEvent, CrawlerResult
+
+
+logger = logging.getLogger(__name__)
+
+
+class WordPressCrawler(BaseCrawler):
+    """Crawler for WordPress sites"""
+
+    async def crawl(self) -> CrawlerResult:
+        """
+        Crawl WordPress site using RSS feed if available,
+        otherwise fall back to HTML parsing
+        """
+        start_time = datetime.now()
+        events = []
+        error = None
+
+        try:
+            # Try RSS feed first
+            if self.source.rss_feed:
+                logger.info(f"{self.source.id}: Crawling RSS feed {self.source.rss_feed}")
+                events = await self.crawl_rss()
+            else:
+                logger.info(f"{self.source.id}: Crawling HTML {self.source.url}")
+                events = await self.crawl_html()
+
+            success = len(events) > 0
+            if not success:
+                error = "No events found"
+
+        except Exception as e:
+            logger.error(f"{self.source.id}: Crawl error: {e}")
+            error = str(e)
+            success = False
+
+        duration = (datetime.now() - start_time).total_seconds()
+
+        return CrawlerResult(
+            source_id=self.source.id,
+            success=success,
+            events=events,
+            error=error,
+            duration_seconds=duration
+        )
+
+    async def crawl_rss(self) -> List[RawEvent]:
+        """Crawl WordPress RSS feed"""
+        events = []
+
+        try:
+            # Fetch RSS feed
+            feed = feedparser.parse(self.source.rss_feed)
+
+            if not feed.entries:
+                logger.warning(f"{self.source.id}: No entries in RSS feed")
+                return events
+
+            for entry in feed.entries[:50]:  # Limit to 50 most recent
+                try:
+                    # Extract data
+                    title = entry.get('title', '')
+                    link = entry.get('link', '')
+                    summary = entry.get('summary', '') or entry.get('description', '')
+
+                    # Parse date
+                    pub_date = None
+                    if hasattr(entry, 'published_parsed'):
+                        pub_date = datetime(*entry.published_parsed[:6])
+
+                    # Extract image
+                    image_url = None
+                    if hasattr(entry, 'media_content'):
+                        image_url = entry.media_content[0].get('url')
+                    elif 'media_thumbnail' in entry:
+                        image_url = entry.media_thumbnail[0].get('url')
+
+                    # Fetch full content if available
+                    content = summary
+                    if link:
+                        full_content = await self.fetch_article_content(link)
+                        if full_content:
+                            content = full_content
+
+                    # Create event
+                    if title and link:
+                        event = self.create_raw_event(
+                            title=title,
+                            content=content,
+                            url=link,
+                            date=pub_date,
+                            image_url=image_url
+                        )
+                        events.append(event)
+
+                    await self.apply_rate_limit()
+
+                except Exception as e:
+                    logger.error(f"{self.source.id}: Error parsing RSS entry: {e}")
+                    continue
+
+            logger.info(f"{self.source.id}: Extracted {len(events)} events from RSS")
+
+        except Exception as e:
+            logger.error(f"{self.source.id}: RSS feed error: {e}")
+
+        return events
+
+    async def fetch_article_content(self, url: str) -> str:
+        """Fetch full article content from URL"""
+        html = await self.fetch_html(url)
+        if not html:
+            return ""
+
+        soup = self.parse_html(html)
+
+        # Try common WordPress content selectors
+        content_selectors = [
+            self.source.selectors.get('content', ''),
+            '.entry-content',
+            '.post-content',
+            'article .content',
+            '[itemprop="articleBody"]'
+        ]
+
+        for selector in content_selectors:
+            if selector:
+                content_elem = soup.select_one(selector)
+                if content_elem:
+                    return content_elem.get_text(strip=True)
+
+        return ""
+
+    async def crawl_html(self) -> List[RawEvent]:
+        """Crawl WordPress site by parsing HTML"""
+        events = []
+
+        try:
+            # Fetch homepage or blog page
+            html = await self.fetch_html(self.source.url)
+            if not html:
+                return events
+
+            soup = self.parse_html(html)
+
+            # Find article elements
+            articles_selector = self.source.selectors.get('articles', '.post, article')
+            articles = soup.select(articles_selector)
+
+            if not articles:
+                logger.warning(f"{self.source.id}: No articles found with selector {articles_selector}")
+                return events
+
+            for article in articles[:50]:  # Limit to 50
+                try:
+                    # Extract title
+                    title_selector = self.source.selectors.get('title', 'h2.entry-title')
+                    title_elem = article.select_one(title_selector)
+                    title = self.extract_text(title_elem) if title_elem else ""
+
+                    # Extract link
+                    link_selector = self.source.selectors.get('link', 'a')
+                    link = ""
+                    if title_elem and title_elem.find('a'):
+                        link = title_elem.find('a').get('href', '')
+                    else:
+                        link_elem = article.select_one(link_selector)
+                        link = self.extract_link(link_elem) if link_elem else ""
+
+                    # Extract content/excerpt
+                    content_selector = self.source.selectors.get('content', '.entry-content')
+                    content_elem = article.select_one(content_selector)
+                    content = self.extract_text(content_elem) if content_elem else ""
+
+                    # Extract date
+                    date_selector = self.source.selectors.get('date', 'time.entry-date')
+                    date_elem = article.select_one(date_selector)
+                    date_str = date_elem.get('datetime', '') if date_elem else ""
+                    event_date = self.parse_date(date_str)
+
+                    # Extract image
+                    image_selector = self.source.selectors.get('image', '.wp-post-image')
+                    image_elem = article.select_one(image_selector)
+                    image_url = self.extract_image(image_elem) if image_elem else None
+
+                    # Create event
+                    if title and link:
+                        event = self.create_raw_event(
+                            title=title,
+                            content=content,
+                            url=link,
+                            date=event_date,
+                            image_url=image_url
+                        )
+                        events.append(event)
+
+                except Exception as e:
+                    logger.error(f"{self.source.id}: Error parsing article: {e}")
+                    continue
+
+            logger.info(f"{self.source.id}: Extracted {len(events)} events from HTML")
+
+        except Exception as e:
+            logger.error(f"{self.source.id}: HTML crawl error: {e}")
+
+        return events

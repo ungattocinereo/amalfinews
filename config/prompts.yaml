@@ -1,0 +1,262 @@
+# LLM Prompts for DeepSeek API
+# Version: 4.0
+
+prompts:
+  # Stage 1: Batch Filtering
+  batch_filter:
+    version: "3.0"
+    description: "Filter Italian articles to identify tourist-relevant events"
+    system_message: "You are an expert in Italian tourism and event curation for the Amalfi Coast region. Your task is to identify events that would interest foreign tourists visiting the area."
+    user_template: |
+      Analyze these {count} Italian news articles and identify events interesting for FOREIGN TOURISTS visiting the Amalfi Coast.
+
+      **INCLUDE if event:**
+      ✅ Open to public (festivals, concerts, markets, exhibitions)
+      ✅ Features culture, food, nature, traditions, entertainment
+      ✅ Has specific date/time information
+      ✅ Interesting for temporary visitors (not locals only)
+      ✅ Family-friendly and accessible
+      ✅ Future event (not past)
+
+      **EXCLUDE if event:**
+      ❌ Religious services (masses, ceremonies)
+      ❌ Political meetings or rallies
+      ❌ Private events (weddings, private parties)
+      ❌ Administrative announcements
+      ❌ Local bureaucracy news
+      ❌ Events already past
+      ❌ Local sports matches (unless major tournaments)
+
+      **Articles to analyze:**
+      {articles_json}
+
+      **Today's date:** {today_date}
+
+      **Response format (JSON only):**
+      {{
+        "relevant_ids": [1, 5, 12, ...],
+        "reasoning": {{
+          "1": "Public concert in Ravello - tourists welcome",
+          "5": "Food festival - cultural interest"
+        }}
+      }}
+
+      Return ONLY the JSON array of relevant event IDs.
+
+  # Stage 2: Individual Translation
+  translate:
+    version: "2.0"
+    description: "Translate and adapt Italian event for English-speaking tourists"
+    system_message: "You are a professional translator specializing in tourism content for the Amalfi Coast. Create engaging, accessible English descriptions for international visitors."
+    user_template: |
+      Translate and adapt this Italian event article for FOREIGN TOURISTS visiting the Amalfi Coast.
+
+      **Original Article:**
+      - Title: {title}
+      - Content: {content}
+      - Event Date: {event_date}
+      - Source: {source_url}
+
+      **Today's Date:** {today_date}
+
+      **Translation Requirements:**
+      1. Use SIMPLE English (B1 level - intermediate)
+      2. Keep description between 50-150 words
+      3. Add context for foreigners (location details, accessibility)
+      4. Verify event date is in the FUTURE
+      5. Include practical information (time, price if mentioned, how to get there)
+      6. Use friendly, welcoming tone
+      7. Highlight what makes this special for tourists
+      8. Remove local political/administrative context
+      9. Focus on experience, not local news
+
+      **Location Context:**
+      - Amalfi Coast includes: Amalfi, Positano, Ravello, Maiori, Minori, Atrani, Praiano
+      - Salerno is the gateway city (train/bus connections)
+      - Mention SITA bus connections if relevant
+      - Note if accessible by boat/ferry
+
+      **Output JSON Format:**
+      {{
+        "title_en": "Event Name in English (under 80 chars)",
+        "description_en": "150-word engaging description with practical info",
+        "event_date": "YYYY-MM-DD",
+        "event_time": "HH:MM" (if available, else null),
+        "location": "Specific venue/area, Town Name",
+        "price_info": "Free / €XX / Price range" (if mentioned),
+        "accessibility": "How to reach (SITA bus, ferry, walking)",
+        "category": "cultural|food|festival|nature|market|music",
+        "is_valid": true,
+        "keywords": ["keyword1", "keyword2", "keyword3"]
+      }}
+
+      **If event is NOT valid (past date, not tourist-relevant, unclear):**
+      {{
+        "is_valid": false,
+        "rejection_reason": "Explain why (past date / not public / administrative)"
+      }}
+
+      Return ONLY the JSON response.
+
+  # Stage 3: Content Enhancement (Optional)
+  enhance:
+    version: "1.0"
+    description: "Enhance translated content with additional tourist information"
+    system_message: "You are a local Amalfi Coast tourism expert. Add valuable context and tips for visitors."
+    user_template: |
+      Enhance this event description with additional tourist-friendly information.
+
+      **Event:**
+      - Title: {title_en}
+      - Description: {description_en}
+      - Location: {location}
+      - Date: {event_date}
+
+      **Add (if not already included):**
+      - Nearby attractions or landmarks
+      - Best time to arrive
+      - What to bring/wear
+      - Photography opportunities
+      - Local food/drink recommendations nearby
+      - Insider tips
+
+      **Keep total length under 200 words.**
+
+      Return enhanced description as plain text.
+
+  # Stage 4: Duplicate Detection
+  duplicate_check:
+    version: "1.0"
+    description: "Check if two events are duplicates"
+    system_message: "You are an expert in identifying duplicate event listings from different news sources."
+    user_template: |
+      Are these two events the same? Consider:
+      - Event name/title similarity
+      - Date and location
+      - Description content
+      - Different sources may describe same event differently
+
+      **Event A:**
+      Title: {title_a}
+      Date: {date_a}
+      Location: {location_a}
+      Description: {description_a}
+
+      **Event B:**
+      Title: {title_b}
+      Date: {date_b}
+      Location: {location_b}
+      Description: {description_b}
+
+      **Response JSON:**
+      {{
+        "is_duplicate": true/false,
+        "confidence": 0.0-1.0,
+        "reasoning": "Why they are/aren't duplicates"
+      }}
+
+  # Error Recovery
+  error_analysis:
+    version: "1.0"
+    description: "Analyze why an article failed processing"
+    user_template: |
+      This article failed processing. Analyze why:
+
+      **Article:**
+      {article_content}
+
+      **Error:**
+      {error_message}
+
+      **Possible reasons:**
+      - Not an event (regular news article)
+      - Missing date information
+      - Past event
+      - Not tourist-relevant
+      - Parsing error
+      - Language issues
+
+      Return JSON:
+      {{
+        "failure_reason": "primary reason",
+        "is_recoverable": true/false,
+        "suggestion": "how to fix if recoverable"
+      }}
+
+# Prompt Configuration
+config:
+  temperature:
+    filtering: 0.1  # Low creativity - objective filtering
+    translation: 0.3  # Some creativity - natural language
+    enhancement: 0.5  # More creativity - engaging content
+
+  max_tokens:
+    filtering: 500
+    translation: 600
+    enhancement: 400
+    duplicate_check: 300
+
+  retry_strategy:
+    max_attempts: 3
+    backoff_multiplier: 2
+    initial_delay: 2
+
+  validation:
+    require_json_response: true
+    validate_schema: true
+    handle_malformed: "retry_once"
+
+# Response Schemas (for validation)
+schemas:
+  filter_response:
+    type: "object"
+    required: ["relevant_ids"]
+    properties:
+      relevant_ids:
+        type: "array"
+        items:
+          type: "integer"
+
+  translate_response:
+    type: "object"
+    required: ["is_valid"]
+    properties:
+      is_valid:
+        type: "boolean"
+      title_en:
+        type: "string"
+        maxLength: 80
+      description_en:
+        type: "string"
+      event_date:
+        type: "string"
+        pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+
+# Keyword Lists for Validation
+validation_keywords:
+  tourist_indicators:
+    - "visitors welcome"
+    - "open to public"
+    - "free entrance"
+    - "tickets available"
+    - "tourist"
+    - "international"
+
+  exclusion_indicators:
+    - "residents only"
+    - "su invito"
+    - "privato"
+    - "council meeting"
+    - "administrative"
+
+# Quality Metrics
+quality_checks:
+  min_description_length: 50
+  max_description_length: 1000
+  required_fields:
+    - "title_en"
+    - "description_en"
+    - "event_date"
+    - "location"
+  date_validation: true
+  future_events_only: true

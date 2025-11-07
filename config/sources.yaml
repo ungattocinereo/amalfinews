@@ -1,0 +1,239 @@
+# Amalfi Coast News Sources Configuration
+# 11 Italian websites for event scraping
+
+sources:
+  - id: "amalfinews"
+    name: "Amalfi News"
+    url: "https://www.amalfinews.it"
+    type: "wordpress"
+    enabled: true
+    priority: 1
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title, h1.entry-title, .post-title"
+      date: "time.entry-date, .published, .post-date"
+      content: ".entry-content, .post-content"
+      image: ".wp-post-image, .post-thumbnail img"
+      link: "a.entry-title, h2 a, h1 a"
+    rss_feed: "https://www.amalfinews.it/feed/"
+
+  - id: "amalfinotizie"
+    name: "Amalfi Notizie"
+    url: "https://www.amalfinotizie.it"
+    type: "wordpress"
+    enabled: true
+    priority: 1
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title, .post-title"
+      date: "time.entry-date, .post-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.amalfinotizie.it/feed/"
+
+  - id: "booble"
+    name: "Booble Eventi"
+    url: "https://www.booble.it"
+    type: "custom"
+    enabled: true
+    priority: 2
+    rate_limit: 0.5
+    selectors:
+      articles: ".event-card, .evento, .post-event"
+      title: "h3.event-title, .evento-title, h2"
+      date: "span.event-date, .data-evento"
+      content: "div.event-description, .evento-desc"
+      image: "img.event-image, .evento-img"
+      link: "a.event-link"
+    notes: "Custom event platform - may have different structure"
+
+  - id: "ilvescovado"
+    name: "Il Vescovado"
+    url: "https://www.ilvescovado.it"
+    type: "wordpress"
+    enabled: true
+    priority: 2
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title"
+      date: "time.entry-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.ilvescovado.it/feed/"
+
+  - id: "ilporticoamalfi"
+    name: "Il Portico Amalfi"
+    url: "https://www.ilporticoamalfi.it"
+    type: "wordpress"
+    enabled: true
+    priority: 1
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title"
+      date: "time.entry-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.ilporticoamalfi.it/feed/"
+
+  - id: "maiorinews"
+    name: "Maiori News"
+    url: "https://www.maiorinews.it"
+    type: "wordpress"
+    enabled: true
+    priority: 2
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title"
+      date: "time.entry-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.maiorinews.it/feed/"
+
+  - id: "occhisusalerno"
+    name: "Occhi su Salerno"
+    url: "https://www.occhisusalerno.it"
+    type: "wordpress"
+    enabled: true
+    priority: 2
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title"
+      date: "time.entry-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.occhisusalerno.it/feed/"
+
+  - id: "positanonews"
+    name: "Positano News"
+    url: "https://www.positanonews.it"
+    type: "wordpress"
+    enabled: true
+    priority: 1
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title, h1.entry-title"
+      date: "time.entry-date, .post-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.positanonews.it/feed/"
+
+  - id: "positanonotizie"
+    name: "Positano Notizie"
+    url: "https://www.positanonotizie.it"
+    type: "wordpress"
+    enabled: true
+    priority: 1
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title"
+      date: "time.entry-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.positanonotizie.it/feed/"
+
+  - id: "ravellonotizie"
+    name: "Ravello Notizie"
+    url: "https://www.ravellonotizie.it"
+    type: "wordpress"
+    enabled: true
+    priority: 1
+    rate_limit: 1.0
+    selectors:
+      articles: ".post, article"
+      title: "h2.entry-title"
+      date: "time.entry-date"
+      content: ".entry-content"
+      image: ".wp-post-image"
+      link: "a.entry-title"
+    rss_feed: "https://www.ravellonotizie.it/feed/"
+
+  - id: "salernotoday"
+    name: "Salerno Today"
+    url: "https://www.salernotoday.it"
+    type: "custom"
+    enabled: true
+    priority: 2
+    rate_limit: 0.5
+    selectors:
+      articles: ".notizia, .news-item, article"
+      title: "h2.title, .news-title"
+      date: ".data, .news-date, time"
+      content: ".testo, .news-content"
+      image: ".img-notizia img, .news-image"
+      link: "a.link-notizia"
+    notes: "Custom CMS - different structure from WordPress"
+
+# Source Categories for Filtering
+categories:
+  cultural_events:
+    - "concerti"
+    - "teatro"
+    - "mostre"
+    - "exhibitions"
+    - "spettacoli"
+
+  food_wine:
+    - "sagra"
+    - "degustazione"
+    - "food"
+    - "vino"
+    - "gastronomia"
+
+  festivals:
+    - "festival"
+    - "festa"
+    - "celebrazione"
+    - "processione"
+
+  nature_outdoor:
+    - "trekking"
+    - "escursione"
+    - "mare"
+    - "spiaggia"
+    - "natura"
+
+  markets:
+    - "mercato"
+    - "mercatino"
+    - "fiera"
+    - "artigianato"
+
+# Exclusion Keywords (always filter out)
+exclusions:
+  political:
+    - "elezioni"
+    - "consiglio comunale"
+    - "giunta"
+    - "politica"
+
+  religious_services:
+    - "messa"
+    - "santa messa"
+    - "liturgia"
+    - "celebrazione eucaristica"
+
+  administrative:
+    - "bando"
+    - "concorso pubblico"
+    - "ordinanza"
+    - "delibera"
+
+  private:
+    - "matrimonio privato"
+    - "evento privato"
+    - "su invito"

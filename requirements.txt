@@ -1,0 +1,52 @@
+# Core Dependencies
+python-dotenv==1.0.0
+pyyaml==6.0.1
+asyncio==3.4.3
+aiohttp==3.9.0
+aiofiles==23.2.1
+
+# Web Scraping
+beautifulsoup4==4.12.2
+lxml==4.9.3
+requests==2.31.0
+playwright==1.40.0
+feedparser==6.0.11
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.12.1
+
+# Telegram Bot
+python-telegram-bot==20.7
+
+# OpenAI-compatible API (for DeepSeek)
+openai==1.5.0
+
+# WordPress
+python-wordpress-xmlrpc==2.3
+requests-toolbelt==1.0.0
+
+# Monitoring & UI
+rich==13.7.0
+psutil==5.9.6
+
+# Image Processing
+Pillow==10.1.0
+
+# Date/Time Handling
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+faker==20.1.0
+
+# Utilities
+tenacity==8.2.3
+httpx==0.25.2
+validators==0.22.0
+
+# Logging
+colorlog==6.8.0

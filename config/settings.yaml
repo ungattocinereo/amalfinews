@@ -1,0 +1,95 @@
+# Amalfi Events Intelligence - Main Configuration
+# Version: 4.0
+
+system:
+  name: "Amalfi Events Intelligence"
+  version: "4.0"
+  platform: "Mac Mini"
+  timezone: "Europe/Rome"
+
+database:
+  path: "./data/events.db"
+  backup_path: "./data/backups"
+  backup_retention_days: 30
+
+logging:
+  level: "INFO"
+  path: "./logs"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  max_file_size_mb: 10
+  backup_count: 5
+
+crawler:
+  timeout_seconds: 10
+  rate_limit_delay: 1.0
+  max_articles_per_source: 50
+  max_retries: 3
+  retry_delay: 5
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  respect_robots_txt: true
+
+deepseek:
+  model: "deepseek-chat"
+  temperature: 0.1
+  max_tokens: 500
+  top_p: 0.95
+  timeout: 30
+  max_retries: 3
+  batch_size: 20
+
+processing:
+  max_description_words: 150
+  min_description_words: 50
+  filter_confidence_threshold: 0.7
+  duplicate_detection: true
+  duplicate_similarity_threshold: 0.85
+
+telegram:
+  max_events_per_message: 5
+  button_timeout_seconds: 300
+  notification_enabled: true
+  daily_report_hour: 8
+  daily_report_minute: 0
+
+wordpress:
+  category_name: "Tourist Events"
+  default_status: "publish"
+  auto_publish: false
+  featured_image_required: false
+  default_tags:
+    - "Amalfi Coast"
+    - "Events"
+    - "Tourism"
+
+images:
+  download_enabled: true
+  min_width: 800
+  min_height: 600
+  max_file_size_mb: 5
+  allowed_formats:
+    - "jpg"
+    - "jpeg"
+    - "png"
+    - "webp"
+
+monitoring:
+  metrics_enabled: true
+  dashboard_refresh_seconds: 5
+  alert_on_source_failure: true
+  alert_on_api_error: true
+
+scheduling:
+  daily_run_hour: 4
+  daily_run_minute: 5
+  health_check_interval_hours: 6
+  cleanup_old_events_days: 90
+
+performance:
+  max_concurrent_crawlers: 3
+  max_concurrent_translations: 5
+  memory_limit_mb: 2048
+
+security:
+  sanitize_html: true
+  block_suspicious_urls: true
+  validate_ssl: true
