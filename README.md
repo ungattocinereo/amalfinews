@@ -36,15 +36,46 @@ WordPress ← Telegram Moderation ← DeepSeek Translation
 
 ## Quick Start
 
-### Prerequisites
+### 🐳 Docker (Recommended)
+
+**Fastest way to get started:**
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Edit with your API keys
+nano .env
+
+# 3. Start container on random port
+./docker-start.sh
+
+# 4. Access web interface
+# The script will show you the URL, e.g., http://localhost:32768
+```
+
+**Features:**
+- ✅ Runs on random available port (no conflicts)
+- ✅ Web monitoring dashboard
+- ✅ Automatic daily runs at 4:05 AM
+- ✅ REST API for control and monitoring
+- ✅ Persistent data via Docker volumes
+
+[Full Docker Documentation →](docs/DOCKER.md)
+
+### 📦 Manual Installation
+
+**For development or non-Docker environments:**
+
+#### Prerequisites
 
 - Python 3.11+
-- Mac Mini (16GB RAM recommended)
+- Mac Mini (16GB RAM recommended) or any Linux/macOS
 - DeepSeek API key
 - Telegram Bot token
 - WordPress site with REST API
 
-### Installation
+#### Installation
 
 ```bash
 # Clone repository

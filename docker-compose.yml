@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  amalfi-events:
+    build: .
+    container_name: amalfi-events
+    restart: unless-stopped
+
+    # Map internal port 8000 to random available host port
+    ports:
+      - "0:8000"  # 0 means Docker will assign a random available port
+
+    environment:
+      # DeepSeek API
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-40c7b8b70652484989af0747043b4117}
+      - DEEPSEEK_ENDPOINT=${DEEPSEEK_ENDPOINT:-https://api.deepseek.com/v1/chat/completions}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+
+      # Telegram Bot
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
+
+      # WordPress
+      - WORDPRESS_URL=${WORDPRESS_URL}
+      - WORDPRESS_USERNAME=${WORDPRESS_USERNAME}
+      - WORDPRESS_APP_PASSWORD=${WORDPRESS_APP_PASSWORD}
+      - WORDPRESS_CATEGORY_ID=${WORDPRESS_CATEGORY_ID:-1}
+
+      # System
+      - DATABASE_PATH=/app/data/events.db
+      - LOG_PATH=/app/logs
+      - TIMEZONE=${TIMEZONE:-Europe/Rome}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # Processing
+      - BATCH_SIZE=${BATCH_SIZE:-20}
+      - MAX_DESCRIPTION_WORDS=${MAX_DESCRIPTION_WORDS:-150}
+
+      # Features
+      - ENABLE_AUTO_PUBLISH=${ENABLE_AUTO_PUBLISH:-false}
+      - ENABLE_TELEGRAM_NOTIFICATIONS=${ENABLE_TELEGRAM_NOTIFICATIONS:-true}
+      - DRY_RUN_MODE=${DRY_RUN_MODE:-false}
+
+      # Scheduling
+      - DAILY_RUN_HOUR=${DAILY_RUN_HOUR:-4}
+      - DAILY_RUN_MINUTE=${DAILY_RUN_MINUTE:-5}
+
+    volumes:
+      # Persist database and logs
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    networks:
+      - amalfi-network
+
+networks:
+  amalfi-network:
+    driver: bridge

@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Database (will be mounted as volume)
+data/*.db
+data/backups/*.db
+
+# Logs (will be mounted as volume)
+logs/*.log
+
+# Environment
+.env
+.env.local
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation (not needed in container)
+*.md
+docs/
+
+# Temporary
+*.tmp
+*.bak
