@@ -3,23 +3,34 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for Pillow, lxml and other packages
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     sqlite3 \
-    cron \
+    gcc \
+    g++ \
+    make \
+    libxml2-dev \
+    libxslt1-dev \
+    zlib1g-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libopenjp2-7-dev \
+    libtiff-dev \
+    libwebp-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip, setuptools, wheel
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Install additional web dependencies
-RUN pip install --no-cache-dir \
-    fastapi==0.109.0 \
-    uvicorn[standard]==0.27.0 \
-    APScheduler==3.10.4
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
