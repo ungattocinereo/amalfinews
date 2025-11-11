@@ -31,8 +31,15 @@ class HealthChecker:
         try:
             start = datetime.now()
 
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
+
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
             async with aiohttp.ClientSession() as session:
-                async with session.get(source.url, timeout=self.timeout) as response:
+                async with session.get(source.url, headers=headers, timeout=timeout, allow_redirects=True) as response:
                     response_time = (datetime.now() - start).total_seconds()
                     status_code = response.status
 

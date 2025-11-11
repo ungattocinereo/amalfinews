@@ -31,19 +31,32 @@ class BaseCrawler(ABC):
 
     async def fetch_html(self, url: str) -> Optional[str]:
         """Fetch HTML content from URL"""
-        headers = {"User-Agent": self.user_agent}
+        headers = {
+            "User-Agent": self.user_agent,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1"
+        }
 
         try:
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers, timeout=self.timeout) as response:
+                async with session.get(url, headers=headers, timeout=timeout, allow_redirects=True) as response:
                     if response.status == 200:
-                        return await response.text()
+                        content = await response.text()
+                        logger.debug(f"{self.source.id}: Successfully fetched {len(content)} bytes from {url}")
+                        return content
                     else:
                         logger.warning(f"{self.source.id}: HTTP {response.status} for {url}")
                         return None
 
         except asyncio.TimeoutError:
             logger.error(f"{self.source.id}: Timeout fetching {url}")
+            return None
+        except aiohttp.ClientError as e:
+            logger.error(f"{self.source.id}: Client error fetching {url}: {e}")
             return None
         except Exception as e:
             logger.error(f"{self.source.id}: Error fetching {url}: {e}")

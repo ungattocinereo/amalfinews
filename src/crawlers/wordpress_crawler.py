@@ -30,18 +30,26 @@ class WordPressCrawler(BaseCrawler):
         try:
             # Try RSS feed first
             if self.source.rss_feed:
-                logger.info(f"{self.source.id}: Crawling RSS feed {self.source.rss_feed}")
+                logger.info(f"{self.source.id}: Trying RSS feed {self.source.rss_feed}")
                 events = await self.crawl_rss()
+
+                # Fallback to HTML if RSS fails
+                if not events:
+                    logger.info(f"{self.source.id}: RSS feed returned no events, falling back to HTML parsing")
+                    events = await self.crawl_html()
             else:
-                logger.info(f"{self.source.id}: Crawling HTML {self.source.url}")
+                logger.info(f"{self.source.id}: No RSS feed configured, using HTML parsing")
                 events = await self.crawl_html()
 
             success = len(events) > 0
             if not success:
-                error = "No events found"
+                error = "No events found after trying all methods"
+                logger.warning(f"{self.source.id}: {error}")
+            else:
+                logger.info(f"{self.source.id}: Successfully extracted {len(events)} events")
 
         except Exception as e:
-            logger.error(f"{self.source.id}: Crawl error: {e}")
+            logger.error(f"{self.source.id}: Crawl error: {e}", exc_info=True)
             error = str(e)
             success = False
 
@@ -60,8 +68,14 @@ class WordPressCrawler(BaseCrawler):
         events = []
 
         try:
-            # Fetch RSS feed
-            feed = feedparser.parse(self.source.rss_feed)
+            # Fetch RSS feed with proper headers
+            rss_content = await self.fetch_html(self.source.rss_feed)
+            if not rss_content:
+                logger.warning(f"{self.source.id}: Failed to fetch RSS feed")
+                return events
+
+            # Parse RSS content
+            feed = feedparser.parse(rss_content)
 
             if not feed.entries:
                 logger.warning(f"{self.source.id}: No entries in RSS feed")
@@ -150,6 +164,7 @@ class WordPressCrawler(BaseCrawler):
             # Fetch homepage or blog page
             html = await self.fetch_html(self.source.url)
             if not html:
+                logger.error(f"{self.source.id}: Failed to fetch HTML from {self.source.url}")
                 return events
 
             soup = self.parse_html(html)
@@ -158,10 +173,18 @@ class WordPressCrawler(BaseCrawler):
             articles_selector = self.source.selectors.get('articles', '.post, article')
             articles = soup.select(articles_selector)
 
+            logger.info(f"{self.source.id}: Found {len(articles)} articles with selector '{articles_selector}'")
+
             if not articles:
-                logger.warning(f"{self.source.id}: No articles found with selector {articles_selector}")
+                logger.warning(f"{self.source.id}: No articles found with selector '{articles_selector}'")
+                # Try to find what's actually on the page
+                for fallback_selector in ['article', '.post', '[class*="post"]', '.entry', '.article']:
+                    fallback = soup.select(fallback_selector)
+                    if fallback:
+                        logger.info(f"{self.source.id}: Found {len(fallback)} elements with fallback selector '{fallback_selector}'")
                 return events
 
+            parsed_count = 0
             for article in articles[:50]:  # Limit to 50
                 try:
                     # Extract title
@@ -169,25 +192,43 @@ class WordPressCrawler(BaseCrawler):
                     title_elem = article.select_one(title_selector)
                     title = self.extract_text(title_elem) if title_elem else ""
 
-                    # Extract link
+                    # Extract link - try multiple methods
                     link_selector = self.source.selectors.get('link', 'a')
                     link = ""
-                    if title_elem and title_elem.find('a'):
-                        link = title_elem.find('a').get('href', '')
-                    else:
+                    if title_elem:
+                        # Try to find link in title element
+                        link_tag = title_elem.find('a') if hasattr(title_elem, 'find') else None
+                        if link_tag:
+                            link = link_tag.get('href', '')
+
+                    if not link:
+                        # Try configured selector
                         link_elem = article.select_one(link_selector)
                         link = self.extract_link(link_elem) if link_elem else ""
+
+                    if not link:
+                        # Try to find any link in the article
+                        any_link = article.find('a')
+                        if any_link:
+                            link = any_link.get('href', '')
 
                     # Extract content/excerpt
                     content_selector = self.source.selectors.get('content', '.entry-content')
                     content_elem = article.select_one(content_selector)
                     content = self.extract_text(content_elem) if content_elem else ""
 
+                    # If no content found, try excerpt
+                    if not content:
+                        excerpt_elem = article.select_one('.entry-summary, .excerpt, .post-excerpt')
+                        content = self.extract_text(excerpt_elem) if excerpt_elem else title
+
                     # Extract date
                     date_selector = self.source.selectors.get('date', 'time.entry-date')
                     date_elem = article.select_one(date_selector)
-                    date_str = date_elem.get('datetime', '') if date_elem else ""
-                    event_date = self.parse_date(date_str)
+                    date_str = ""
+                    if date_elem:
+                        date_str = date_elem.get('datetime', '') or self.extract_text(date_elem)
+                    event_date = self.parse_date(date_str) if date_str else None
 
                     # Extract image
                     image_selector = self.source.selectors.get('image', '.wp-post-image')
@@ -204,12 +245,15 @@ class WordPressCrawler(BaseCrawler):
                             image_url=image_url
                         )
                         events.append(event)
+                        parsed_count += 1
+                    else:
+                        logger.debug(f"{self.source.id}: Skipping article - missing title or link (title: {bool(title)}, link: {bool(link)})")
 
                 except Exception as e:
-                    logger.error(f"{self.source.id}: Error parsing article: {e}")
+                    logger.error(f"{self.source.id}: Error parsing article: {e}", exc_info=True)
                     continue
 
-            logger.info(f"{self.source.id}: Extracted {len(events)} events from HTML")
+            logger.info(f"{self.source.id}: Successfully parsed {parsed_count}/{len(articles)} articles from HTML")
 
         except Exception as e:
             logger.error(f"{self.source.id}: HTML crawl error: {e}")
