@@ -558,20 +558,20 @@ def create_realtime_dashboard() -> str:
         </div>
 
         <script>
-            const eventSource = new EventSource('/api/realtime/stream');
+            var eventSource = new EventSource('/api/realtime/stream');
 
-            eventSource.addEventListener('stats', (event) => {
+            eventSource.addEventListener('stats', function(event) {
                 try {
-                    const data = JSON.parse(event.data);
+                    var data = JSON.parse(event.data);
                     updateDashboard(data);
                 } catch (e) {
                     console.error('Failed to parse event data:', e);
                 }
             });
 
-            eventSource.onerror = (error) => {
+            eventSource.onerror = function(error) {
                 console.error('EventSource error:', error);
-                setTimeout(() => {
+                setTimeout(function() {
                     location.reload();
                 }, 5000);
             };
@@ -581,7 +581,7 @@ def create_realtime_dashboard() -> str:
                 document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
 
                 // Update status badge
-                const statusBadge = document.getElementById('status-badge');
+                var statusBadge = document.getElementById('status-badge');
                 statusBadge.className = 'status-badge status-' + data.status;
                 statusBadge.textContent = '● ' + data.status.toUpperCase();
 
@@ -602,7 +602,7 @@ def create_realtime_dashboard() -> str:
 
                 // Update progress
                 if (data.progress) {
-                    const percentage = Math.round(data.progress.percentage);
+                    var percentage = Math.round(data.progress.percentage);
                     document.getElementById('progress-fill').style.width = percentage + '%';
                     document.getElementById('progress-text').textContent = percentage + '%';
                     document.getElementById('progress-fraction').textContent =
@@ -621,7 +621,7 @@ def create_realtime_dashboard() -> str:
 
                 // Update errors
                 if (data.errors && data.errors.length > 0) {
-                    const errorsHtml = data.errors.map(function(err) {
+                    var errorsHtml = data.errors.map(function(err) {
                         return '<div class="error-item">⚠️ ' + err + '</div>';
                     }).join('');
                     document.getElementById('errors-container').innerHTML =
@@ -634,118 +634,132 @@ def create_realtime_dashboard() -> str:
 
             // Control panel functions
             function showStatus(message, type) {
-                const statusDiv = document.getElementById('control-status');
+                var statusDiv = document.getElementById('control-status');
                 statusDiv.className = 'status-message status-' + type;
                 statusDiv.textContent = message;
                 statusDiv.style.display = 'block';
 
-                setTimeout(() => {
+                setTimeout(function() {
                     statusDiv.style.display = 'none';
                 }, 5000);
             }
 
             function disableButtons(disabled) {
-                document.querySelectorAll('.control-btn').forEach(btn => {
+                var buttons = document.querySelectorAll('.control-btn');
+                buttons.forEach(function(btn) {
                     btn.disabled = disabled;
                 });
             }
 
-            async function triggerManualRun() {
+            function triggerManualRun() {
                 if (!confirm('Start manual crawling of all sources?')) return;
 
                 disableButtons(true);
                 showStatus('⏳ Starting crawling operation...', 'warning');
 
-                try {
-                    const response = await fetch('/run', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({dry_run: false})
+                fetch('/run', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({dry_run: false})
+                })
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        return {response: response, data: data};
                     });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
+                })
+                .then(function(result) {
+                    if (result.response.ok) {
                         showStatus('✅ Crawling started! Watch progress above.', 'success');
                     } else {
-                        showStatus('❌ Error: ' + (data.detail || 'Failed to start'), 'error');
+                        showStatus('❌ Error: ' + (result.data.detail || 'Failed to start'), 'error');
                     }
-                } catch (error) {
+                    setTimeout(function() { disableButtons(false); }, 2000);
+                })
+                .catch(function(error) {
                     showStatus('❌ Error: ' + error.message, 'error');
-                } finally {
-                    setTimeout(() => disableButtons(false), 2000);
-                }
+                    setTimeout(function() { disableButtons(false); }, 2000);
+                });
             }
 
-            async function checkSourcesHealth() {
+            function checkSourcesHealth() {
                 disableButtons(true);
                 showStatus('⏳ Checking sources health...', 'warning');
 
-                try {
-                    const response = await fetch('/sources/health');
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        showStatus('✅ Health check complete: ' + data.healthy + '/' + data.total + ' sources healthy', 'success');
+                fetch('/sources/health')
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        return {response: response, data: data};
+                    });
+                })
+                .then(function(result) {
+                    if (result.response.ok) {
+                        showStatus('✅ Health check complete: ' + result.data.healthy + '/' + result.data.total + ' sources healthy', 'success');
                     } else {
                         showStatus('❌ Health check failed', 'error');
                     }
-                } catch (error) {
+                    setTimeout(function() { disableButtons(false); }, 1000);
+                })
+                .catch(function(error) {
                     showStatus('❌ Error: ' + error.message, 'error');
-                } finally {
-                    setTimeout(() => disableButtons(false), 1000);
-                }
+                    setTimeout(function() { disableButtons(false); }, 1000);
+                });
             }
 
-            async function clearPendingEvents() {
+            function clearPendingEvents() {
                 if (!confirm('Clear all pending events? This cannot be undone!')) return;
 
                 disableButtons(true);
                 showStatus('⏳ Clearing pending events...', 'warning');
 
-                try {
-                    const response = await fetch('/api/database/clear-pending', {
-                        method: 'POST'
+                fetch('/api/database/clear-pending', {
+                    method: 'POST'
+                })
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        return {response: response, data: data};
                     });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        showStatus('✅ Cleared ' + data.deleted + ' pending events', 'success');
+                })
+                .then(function(result) {
+                    if (result.response.ok) {
+                        showStatus('✅ Cleared ' + result.data.deleted + ' pending events', 'success');
                     } else {
-                        showStatus('❌ Error: ' + (data.detail || 'Failed to clear'), 'error');
+                        showStatus('❌ Error: ' + (result.data.detail || 'Failed to clear'), 'error');
                     }
-                } catch (error) {
+                    setTimeout(function() { disableButtons(false); }, 1000);
+                })
+                .catch(function(error) {
                     showStatus('❌ Error: ' + error.message, 'error');
-                } finally {
-                    setTimeout(() => disableButtons(false), 1000);
-                }
+                    setTimeout(function() { disableButtons(false); }, 1000);
+                });
             }
 
-            async function clearDatabase() {
-                if (!confirm('⚠️ WARNING: This will DELETE ALL DATA in the database!\n\nAre you absolutely sure?')) return;
+            function clearDatabase() {
+                if (!confirm('⚠️ WARNING: This will DELETE ALL DATA in the database!\\n\\nAre you absolutely sure?')) return;
                 if (!confirm('This is your LAST WARNING. All events will be permanently deleted. Continue?')) return;
 
                 disableButtons(true);
                 showStatus('⏳ Clearing entire database...', 'warning');
 
-                try {
-                    const response = await fetch('/api/database/clear-all', {
-                        method: 'POST'
+                fetch('/api/database/clear-all', {
+                    method: 'POST'
+                })
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        return {response: response, data: data};
                     });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        showStatus('✅ Database cleared: ' + data.deleted_raw + ' raw + ' + data.deleted_processed + ' processed events', 'success');
+                })
+                .then(function(result) {
+                    if (result.response.ok) {
+                        showStatus('✅ Database cleared: ' + result.data.deleted_raw + ' raw + ' + result.data.deleted_processed + ' processed events', 'success');
                     } else {
-                        showStatus('❌ Error: ' + (data.detail || 'Failed to clear'), 'error');
+                        showStatus('❌ Error: ' + (result.data.detail || 'Failed to clear'), 'error');
                     }
-                } catch (error) {
+                    setTimeout(function() { disableButtons(false); }, 1000);
+                })
+                .catch(function(error) {
                     showStatus('❌ Error: ' + error.message, 'error');
-                } finally {
-                    setTimeout(() => disableButtons(false), 1000);
-                }
+                    setTimeout(function() { disableButtons(false); }, 1000);
+                });
             }
         </script>
     </body>
