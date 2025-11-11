@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Dict, List
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.core.database import get_database
@@ -24,6 +25,15 @@ app = FastAPI(
     title="Amalfi Events Intelligence",
     description="Automated event collection system for Amalfi Coast tourism",
     version="4.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Global state for background tasks
@@ -46,115 +56,48 @@ class ManualRunRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    """Root endpoint with HTML dashboard"""
+    """Root endpoint - redirect to dashboard"""
     html_content = """
     <!DOCTYPE html>
     <html>
     <head>
         <title>Amalfi Events Intelligence</title>
+        <meta http-equiv="refresh" content="0; url=/dashboard">
         <style>
             body {
                 font-family: Arial, sans-serif;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #f5f5f5;
-            }
-            .header {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
-                padding: 30px;
-                border-radius: 10px;
-                margin-bottom: 20px;
             }
-            .card {
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            .loader {
+                text-align: center;
             }
-            .status-ok { color: #10b981; font-weight: bold; }
-            .status-error { color: #ef4444; font-weight: bold; }
-            button {
-                background-color: #667eea;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 16px;
+            .spinner {
+                border: 4px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                border-top: 4px solid white;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
             }
-            button:hover {
-                background-color: #764ba2;
-            }
-            .endpoint {
-                background-color: #f0f0f0;
-                padding: 10px;
-                border-radius: 5px;
-                margin: 10px 0;
-                font-family: monospace;
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
             }
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>🎯 Amalfi Events Intelligence</h1>
-            <p>Automated Event Collection System v4.0</p>
+        <div class="loader">
+            <div class="spinner"></div>
+            <h2>Loading Dashboard...</h2>
+            <p>Redirecting to real-time monitoring interface</p>
         </div>
-
-        <div class="card">
-            <h2>📊 System Status</h2>
-            <p>Check system status: <span class="endpoint">GET /status</span></p>
-            <button onclick="window.location.href='/status'">View Status</button>
-        </div>
-
-        <div class="card">
-            <h2>📈 Statistics</h2>
-            <p>Daily statistics: <span class="endpoint">GET /stats</span></p>
-            <button onclick="window.location.href='/stats'">View Statistics</button>
-        </div>
-
-        <div class="card">
-            <h2>🌐 Source Health</h2>
-            <p>Check news sources: <span class="endpoint">GET /sources/health</span></p>
-            <button onclick="window.location.href='/sources/health'">Check Sources</button>
-        </div>
-
-        <div class="card">
-            <h2>📝 Events</h2>
-            <p>Pending events: <span class="endpoint">GET /events/pending</span></p>
-            <p>Recent events: <span class="endpoint">GET /events/recent</span></p>
-            <button onclick="window.location.href='/events/pending'">View Pending</button>
-            <button onclick="window.location.href='/events/recent'">View Recent</button>
-        </div>
-
-        <div class="card">
-            <h2>▶️ Manual Control</h2>
-            <p>Trigger manual run: <span class="endpoint">POST /run</span></p>
-            <button onclick="triggerRun()">Run Now (Dry Run)</button>
-        </div>
-
-        <div class="card">
-            <h2>📚 API Documentation</h2>
-            <p><a href="/docs" target="_blank">Interactive API Docs (Swagger UI)</a></p>
-            <p><a href="/redoc" target="_blank">ReDoc Documentation</a></p>
-        </div>
-
-        <script>
-            function triggerRun() {
-                if (confirm('Trigger a dry run of the daily workflow?')) {
-                    fetch('/run', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({dry_run: true})
-                    })
-                    .then(response => response.json())
-                    .then(data => alert('Run started: ' + data.message))
-                    .catch(error => alert('Error: ' + error));
-                }
-            }
-        </script>
     </body>
     </html>
     """
@@ -360,6 +303,29 @@ async def get_recent_logs(lines: int = 50):
     except Exception as e:
         logger.error(f"Failed to read logs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Setup real-time dashboard routes
+from src.web.realtime_api import create_realtime_dashboard, event_stream, get_current_stats
+from sse_starlette.sse import EventSourceResponse
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard():
+    """Get real-time monitoring dashboard"""
+    return create_realtime_dashboard()
+
+
+@app.get("/api/realtime/stream")
+async def stream_realtime_stats():
+    """Stream real-time statistics via Server-Sent Events"""
+    return EventSourceResponse(event_stream())
+
+
+@app.get("/api/realtime/stats")
+async def get_realtime_statistics():
+    """Get current real-time statistics (REST endpoint)"""
+    return get_current_stats()
 
 
 if __name__ == "__main__":

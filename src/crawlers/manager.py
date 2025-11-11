@@ -10,6 +10,7 @@ from datetime import datetime
 from src.core.models import SourceConfig, SourceType, RawEvent, CrawlerResult
 from src.crawlers.wordpress_crawler import WordPressCrawler
 from src.crawlers.custom_crawler import CustomCrawler
+from src.monitoring.progress_tracker import progress_tracker
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class CrawlerManager:
     def __init__(self, timeout: int = 10, user_agent: str = ""):
         self.timeout = timeout
         self.user_agent = user_agent
+        self.use_progress_tracking = True
 
     def create_crawler(self, source: SourceConfig):
         """Create appropriate crawler for source type"""
@@ -33,15 +35,30 @@ class CrawlerManager:
         """Crawl a single source"""
         logger.info(f"Crawling {source.id}...")
 
-        crawler = self.create_crawler(source)
-        result = await crawler.crawl()
+        # Update progress tracker
+        if self.use_progress_tracking:
+            progress_tracker.update_source(source.id, source.name)
 
-        if result.success:
-            logger.info(f"{source.id}: Found {len(result.events)} events in {result.duration_seconds:.1f}s")
-        else:
-            logger.error(f"{source.id}: Crawl failed - {result.error}")
+        try:
+            crawler = self.create_crawler(source)
+            result = await crawler.crawl()
 
-        return result
+            if result.success:
+                logger.info(f"{source.id}: Found {len(result.events)} events in {result.duration_seconds:.1f}s")
+                if self.use_progress_tracking:
+                    progress_tracker.complete_source(source.id, len(result.events), success=True)
+            else:
+                logger.error(f"{source.id}: Crawl failed - {result.error}")
+                if self.use_progress_tracking:
+                    progress_tracker.complete_source(source.id, 0, success=False, error=result.error)
+
+            return result
+
+        except Exception as e:
+            logger.error(f"{source.id}: Unexpected error - {e}", exc_info=True)
+            if self.use_progress_tracking:
+                progress_tracker.complete_source(source.id, 0, success=False, error=str(e))
+            raise
 
     async def crawl_all(self, sources: List[SourceConfig],
                        max_concurrent: int = 3) -> List[CrawlerResult]:
@@ -50,6 +67,10 @@ class CrawlerManager:
         """
         logger.info(f"Starting crawl of {len(sources)} sources (max {max_concurrent} concurrent)")
         start_time = datetime.now()
+
+        # Initialize progress tracking
+        if self.use_progress_tracking:
+            progress_tracker.start_operation(len(sources))
 
         # Create semaphore for concurrency control
         semaphore = asyncio.Semaphore(max_concurrent)
@@ -85,6 +106,10 @@ class CrawlerManager:
 
         logger.info(f"Crawl complete: {successful}/{len(sources)} successful, "
                    f"{total_events} total events in {duration:.1f}s")
+
+        # Finish progress tracking
+        if self.use_progress_tracking:
+            progress_tracker.finish_operation()
 
         return crawler_results
 
