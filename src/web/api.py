@@ -328,6 +328,77 @@ async def get_realtime_statistics():
     return get_current_stats()
 
 
+@app.post("/api/database/clear-pending")
+async def clear_pending_events():
+    """Clear all pending events from database"""
+    try:
+        config = get_config()
+        db = get_database(config.database_path)
+
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Count pending events
+            cursor.execute("SELECT COUNT(*) FROM processed_events WHERE status = 'pending'")
+            count = cursor.fetchone()[0]
+
+            # Delete pending events
+            cursor.execute("DELETE FROM processed_events WHERE status = 'pending'")
+            conn.commit()
+
+        logger.info(f"Cleared {count} pending events")
+
+        return {
+            "status": "success",
+            "deleted": count,
+            "message": f"Successfully deleted {count} pending events"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to clear pending events: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/database/clear-all")
+async def clear_all_database():
+    """Clear entire database (WARNING: irreversible!)"""
+    try:
+        config = get_config()
+        db = get_database(config.database_path)
+
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Count events
+            cursor.execute("SELECT COUNT(*) FROM raw_events")
+            raw_count = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM processed_events")
+            processed_count = cursor.fetchone()[0]
+
+            # Delete all events
+            cursor.execute("DELETE FROM raw_events")
+            cursor.execute("DELETE FROM processed_events")
+
+            # Reset autoincrement
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('raw_events', 'processed_events')")
+
+            conn.commit()
+
+        logger.warning(f"Database cleared: {raw_count} raw events + {processed_count} processed events deleted")
+
+        return {
+            "status": "success",
+            "deleted_raw": raw_count,
+            "deleted_processed": processed_count,
+            "message": f"Database cleared: {raw_count} raw + {processed_count} processed events deleted"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to clear database: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

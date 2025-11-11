@@ -352,6 +352,91 @@ def create_realtime_dashboard() -> str:
             ::-webkit-scrollbar-thumb:hover {
                 background: #764ba2;
             }
+
+            .control-btn {
+                width: 100%;
+                padding: 15px 20px;
+                margin-bottom: 10px;
+                border: none;
+                border-radius: 10px;
+                font-size: 1em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .control-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            }
+
+            .control-btn:active {
+                transform: translateY(0);
+            }
+
+            .control-btn-primary {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+
+            .control-btn-secondary {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+            }
+
+            .control-btn-warning {
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                color: white;
+            }
+
+            .control-btn-danger {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+            }
+
+            .control-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none !important;
+            }
+
+            .btn-icon {
+                font-size: 1.2em;
+            }
+
+            .status-message {
+                padding: 12px;
+                border-radius: 8px;
+                font-weight: 500;
+                animation: fadeIn 0.3s ease;
+            }
+
+            .status-success {
+                background: #d1fae5;
+                color: #065f46;
+                border: 1px solid #10b981;
+            }
+
+            .status-error {
+                background: #fee2e2;
+                color: #991b1b;
+                border: 1px solid #ef4444;
+            }
+
+            .status-warning {
+                background: #fef3c7;
+                color: #92400e;
+                border: 1px solid #f59e0b;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
         </style>
     </head>
     <body>
@@ -439,12 +524,26 @@ def create_realtime_dashboard() -> str:
 
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">📊 Sources Status</div>
-                    <div id="sources-list" class="sources-list">
-                        <div style="text-align: center; color: #999; padding: 20px;">
-                            Waiting for data...
-                        </div>
+                    <div class="card-title">🎮 Control Panel</div>
+                    <div style="margin-top: 15px;">
+                        <button class="control-btn control-btn-primary" onclick="triggerManualRun()">
+                            <span class="btn-icon">▶️</span>
+                            <span>Run Crawling Now</span>
+                        </button>
+                        <button class="control-btn control-btn-secondary" onclick="checkSourcesHealth()">
+                            <span class="btn-icon">🔍</span>
+                            <span>Check Sources Health</span>
+                        </button>
+                        <button class="control-btn control-btn-warning" onclick="clearPendingEvents()">
+                            <span class="btn-icon">🗑️</span>
+                            <span>Clear Pending Events</span>
+                        </button>
+                        <button class="control-btn control-btn-danger" onclick="clearDatabase()">
+                            <span class="btn-icon">⚠️</span>
+                            <span>Clear All Database</span>
+                        </button>
                     </div>
+                    <div id="control-status" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
                 </div>
 
                 <div class="card">
@@ -530,6 +629,122 @@ def create_realtime_dashboard() -> str:
                 } else {
                     document.getElementById('errors-container').innerHTML =
                         '<div style="text-align: center; color: #999; padding: 20px;">No errors</div>';
+                }
+            }
+
+            // Control panel functions
+            function showStatus(message, type) {
+                const statusDiv = document.getElementById('control-status');
+                statusDiv.className = 'status-message status-' + type;
+                statusDiv.textContent = message;
+                statusDiv.style.display = 'block';
+
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            function disableButtons(disabled) {
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.disabled = disabled;
+                });
+            }
+
+            async function triggerManualRun() {
+                if (!confirm('Start manual crawling of all sources?')) return;
+
+                disableButtons(true);
+                showStatus('⏳ Starting crawling operation...', 'warning');
+
+                try {
+                    const response = await fetch('/run', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({dry_run: false})
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showStatus('✅ Crawling started! Watch progress above.', 'success');
+                    } else {
+                        showStatus('❌ Error: ' + (data.detail || 'Failed to start'), 'error');
+                    }
+                } catch (error) {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                } finally {
+                    setTimeout(() => disableButtons(false), 2000);
+                }
+            }
+
+            async function checkSourcesHealth() {
+                disableButtons(true);
+                showStatus('⏳ Checking sources health...', 'warning');
+
+                try {
+                    const response = await fetch('/sources/health');
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showStatus(`✅ Health check complete: ${data.healthy}/${data.total} sources healthy`, 'success');
+                    } else {
+                        showStatus('❌ Health check failed', 'error');
+                    }
+                } catch (error) {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                } finally {
+                    setTimeout(() => disableButtons(false), 1000);
+                }
+            }
+
+            async function clearPendingEvents() {
+                if (!confirm('Clear all pending events? This cannot be undone!')) return;
+
+                disableButtons(true);
+                showStatus('⏳ Clearing pending events...', 'warning');
+
+                try {
+                    const response = await fetch('/api/database/clear-pending', {
+                        method: 'POST'
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showStatus(`✅ Cleared ${data.deleted} pending events`, 'success');
+                    } else {
+                        showStatus('❌ Error: ' + (data.detail || 'Failed to clear'), 'error');
+                    }
+                } catch (error) {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                } finally {
+                    setTimeout(() => disableButtons(false), 1000);
+                }
+            }
+
+            async function clearDatabase() {
+                if (!confirm('⚠️ WARNING: This will DELETE ALL DATA in the database!\n\nAre you absolutely sure?')) return;
+                if (!confirm('This is your LAST WARNING. All events will be permanently deleted. Continue?')) return;
+
+                disableButtons(true);
+                showStatus('⏳ Clearing entire database...', 'warning');
+
+                try {
+                    const response = await fetch('/api/database/clear-all', {
+                        method: 'POST'
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showStatus(`✅ Database cleared: ${data.deleted_raw} raw + ${data.deleted_processed} processed events`, 'success');
+                    } else {
+                        showStatus('❌ Error: ' + (data.detail || 'Failed to clear'), 'error');
+                    }
+                } catch (error) {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                } finally {
+                    setTimeout(() => disableButtons(false), 1000);
                 }
             }
         </script>
