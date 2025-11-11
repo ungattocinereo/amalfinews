@@ -621,9 +621,9 @@ def create_realtime_dashboard() -> str:
 
                 // Update errors
                 if (data.errors && data.errors.length > 0) {
-                    const errorsHtml = data.errors.map(err =>
-                        `<div class="error-item">⚠️ ${err}</div>`
-                    ).join('');
+                    const errorsHtml = data.errors.map(function(err) {
+                        return '<div class="error-item">⚠️ ' + err + '</div>';
+                    }).join('');
                     document.getElementById('errors-container').innerHTML =
                         '<div class="error-log">' + errorsHtml + '</div>';
                 } else {
@@ -686,7 +686,7 @@ def create_realtime_dashboard() -> str:
                     const data = await response.json();
 
                     if (response.ok) {
-                        showStatus(`✅ Health check complete: ${data.healthy}/${data.total} sources healthy`, 'success');
+                        showStatus('✅ Health check complete: ' + data.healthy + '/' + data.total + ' sources healthy', 'success');
                     } else {
                         showStatus('❌ Health check failed', 'error');
                     }
@@ -711,7 +711,7 @@ def create_realtime_dashboard() -> str:
                     const data = await response.json();
 
                     if (response.ok) {
-                        showStatus(`✅ Cleared ${data.deleted} pending events`, 'success');
+                        showStatus('✅ Cleared ' + data.deleted + ' pending events', 'success');
                     } else {
                         showStatus('❌ Error: ' + (data.detail || 'Failed to clear'), 'error');
                     }
@@ -737,7 +737,7 @@ def create_realtime_dashboard() -> str:
                     const data = await response.json();
 
                     if (response.ok) {
-                        showStatus(`✅ Database cleared: ${data.deleted_raw} raw + ${data.deleted_processed} processed events`, 'success');
+                        showStatus('✅ Database cleared: ' + data.deleted_raw + ' raw + ' + data.deleted_processed + ' processed events', 'success');
                     } else {
                         showStatus('❌ Error: ' + (data.detail || 'Failed to clear'), 'error');
                     }
