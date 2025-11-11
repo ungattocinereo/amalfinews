@@ -18,8 +18,6 @@ from src.crawlers.manager import CrawlerManager
 from src.llm.deepseek_client import DeepSeekClient
 from src.llm.filter import EventFilter
 from src.llm.translator import EventTranslator
-from src.wordpress.client import WordPressClient
-from src.wordpress.publisher import EventPublisher
 
 # Setup logging
 logging.basicConfig(
@@ -140,26 +138,11 @@ async def main():
         for event in relevant_events:
             db.mark_raw_event_processed(event.id, "Filtered and translated")
 
-        # ===== STAGE 5: Auto-publish (if enabled) =====
-        if config.enable_auto_publish:
-            logger.info("\n📋 Stage 5: Auto-Publishing")
-
-            wp_client = WordPressClient(
-                url=config.wordpress_url,
-                username=config.wordpress_username,
-                app_password=config.wordpress_app_password
-            )
-
-            publisher = EventPublisher(
-                client=wp_client,
-                category_id=config.wordpress_category_id,
-                dry_run=config.dry_run_mode
-            )
-
-            published_count = await publisher.publish_approved_events()
-            logger.info(f"✅ Published {published_count} events")
-        else:
-            logger.info("\n⏭️  Stage 5: Auto-publish disabled (use Telegram bot for moderation)")
+        # ===== STAGE 5: Events ready for moderation =====
+        logger.info("\n📋 Stage 5: Events ready")
+        logger.info(f"✅ {len(processed_events)} events waiting in database")
+        logger.info("📱 Check Telegram bot to review and moderate events")
+        logger.info("💡 Approved events can be published manually from database")
 
         # ===== FINAL SUMMARY =====
         duration = (datetime.now() - start_time).total_seconds()

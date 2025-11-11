@@ -78,12 +78,12 @@ if [ ! -f ".env" ]; then
     echo ""
     echo "  nano .env"
     echo ""
-    echo "Обязательные параметры:"
+    echo "Обязательные параметры (всего 2!):"
     echo "  - TELEGRAM_BOT_TOKEN     (получите у @BotFather)"
     echo "  - TELEGRAM_ADMIN_ID      (получите у @userinfobot)"
-    echo "  - WORDPRESS_URL          (адрес вашего сайта)"
-    echo "  - WORDPRESS_USERNAME     (логин WordPress)"
-    echo "  - WORDPRESS_APP_PASSWORD (пароль приложения WP)"
+    echo ""
+    echo "Система будет собирать события, переводить их и отправлять"
+    echo "вам в Telegram для модерации. Публикация - на ваше усмотрение."
     echo ""
     read -p "Нажмите Enter после настройки .env..."
 fi
@@ -98,9 +98,6 @@ if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ "$TELEGRAM_BOT_TOKEN" = "your_bot_token_her
 fi
 if [ -z "$TELEGRAM_ADMIN_ID" ] || [ "$TELEGRAM_ADMIN_ID" = "your_telegram_id" ]; then
     missing_vars+=("TELEGRAM_ADMIN_ID")
-fi
-if [ -z "$WORDPRESS_URL" ] || [ "$WORDPRESS_URL" = "https://your-site.com" ]; then
-    missing_vars+=("WORDPRESS_URL")
 fi
 
 if [ ${#missing_vars[@]} -gt 0 ]; then

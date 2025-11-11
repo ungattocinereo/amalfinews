@@ -1,12 +1,12 @@
 # Amalfi Events Intelligence
 
-**Automated Event Collection & Publishing System for Amalfi Coast Tourism**
+**Automated Event Collection & Translation System for Amalfi Coast Tourism**
 
-Version 4.0 | DeepSeek API Edition | Mac Mini Platform
+Version 4.0 | DeepSeek API Edition | Docker + Telegram
 
 ## Overview
 
-Automated system for collecting, analyzing, and publishing tourist events from the Amalfi Coast region (Italy) for international visitors. The system runs locally on Mac Mini using **n8n workflow automation** with **DeepSeek API** for intelligent content processing.
+Automated system for collecting, analyzing, and translating tourist events from the Amalfi Coast region (Italy) for international visitors. The system runs in Docker with **DeepSeek API** for intelligent content processing and delivers ready-to-publish content via Telegram.
 
 ### What It Does
 
@@ -14,7 +14,7 @@ Automated system for collecting, analyzing, and publishing tourist events from t
 - **Filters** relevant tourist events using DeepSeek AI
 - **Translates** Italian content to tourist-friendly English
 - **Moderates** via Telegram bot interface
-- **Publishes** automatically to WordPress
+- **Delivers** translated events ready for you to publish
 
 ## Key Features
 
@@ -22,9 +22,10 @@ Automated system for collecting, analyzing, and publishing tourist events from t
 - 🤖 **AI-Powered Filtering** - DeepSeek API batch processing
 - 🌍 **Smart Translation** - Tourist-optimized English content
 - 📱 **Telegram Moderation** - Easy approval workflow
-- 📝 **Auto-Publishing** - Direct WordPress integration
-- 📊 **Real-Time Monitoring** - Rich terminal dashboard
+- 💾 **Database Storage** - All events in SQLite for export
+- 📊 **Real-Time Monitoring** - Web interface with dashboard
 - 🔧 **Health Checks** - Automatic source validation
+- 🐳 **Docker Ready** - One-command installation
 
 ## Architecture
 
