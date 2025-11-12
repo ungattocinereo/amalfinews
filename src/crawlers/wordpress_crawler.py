@@ -3,6 +3,7 @@ WordPress-specific crawler
 Handles WordPress sites with RSS feed support
 """
 
+import asyncio
 import logging
 import feedparser
 from datetime import datetime
@@ -36,6 +37,8 @@ class WordPressCrawler(BaseCrawler):
                 # Fallback to HTML if RSS fails
                 if not events:
                     logger.info(f"{self.source.id}: RSS feed returned no events, falling back to HTML parsing")
+                    # Add small delay before trying HTML to avoid rate limiting
+                    await asyncio.sleep(1)
                     events = await self.crawl_html()
             else:
                 logger.info(f"{self.source.id}: No RSS feed configured, using HTML parsing")

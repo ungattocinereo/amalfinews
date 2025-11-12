@@ -22,7 +22,7 @@ class BaseCrawler(ABC):
     def __init__(self, source: SourceConfig, timeout: int = 10, user_agent: str = ""):
         self.source = source
         self.timeout = timeout
-        self.user_agent = user_agent or "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+        self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @abstractmethod
     async def crawl(self) -> CrawlerResult:
@@ -30,24 +30,40 @@ class BaseCrawler(ABC):
         pass
 
     async def fetch_html(self, url: str) -> Optional[str]:
-        """Fetch HTML content from URL"""
+        """Fetch HTML content from URL with advanced anti-bot headers"""
         headers = {
             "User-Agent": self.user_agent,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Accept-Encoding": "gzip, deflate",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
             "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1"
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Cache-Control": "max-age=0",
+            "Referer": "https://www.google.com/"
         }
 
         try:
             timeout = aiohttp.ClientTimeout(total=self.timeout)
-            async with aiohttp.ClientSession() as session:
+            # Use persistent session with cookie jar
+            connector = aiohttp.TCPConnector(ssl=False)
+            async with aiohttp.ClientSession(connector=connector, cookie_jar=aiohttp.CookieJar()) as session:
                 async with session.get(url, headers=headers, timeout=timeout, allow_redirects=True) as response:
                     if response.status == 200:
                         content = await response.text()
+                        # Check for bot-blocking messages even with 200 status
+                        if "Access denied" in content or "access denied" in content.lower():
+                            logger.warning(f"{self.source.id}: Access denied (bot protection) for {url}")
+                            return None
                         logger.debug(f"{self.source.id}: Successfully fetched {len(content)} bytes from {url}")
                         return content
+                    elif response.status == 403:
+                        logger.warning(f"{self.source.id}: HTTP 403 Forbidden - Bot protection blocking {url}")
+                        return None
                     else:
                         logger.warning(f"{self.source.id}: HTTP {response.status} for {url}")
                         return None
