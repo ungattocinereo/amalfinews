@@ -88,7 +88,7 @@ sources:
     type: "wordpress"
     enabled: true
     priority: 2
-    rate_limit: 1.0
+    rate_limit: 2.0
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -96,7 +96,8 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    rss_feed: "https://www.maiorinews.it/feed/"
+    # RSS feed disabled - site blocks bots, use HTML parsing
+    # rss_feed: "https://www.maiorinews.it/feed/"
 
   - id: "occhisusalerno"
     name: "Occhi su Salerno"
@@ -104,7 +105,7 @@ sources:
     type: "wordpress"
     enabled: true
     priority: 2
-    rate_limit: 1.0
+    rate_limit: 2.0
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -112,7 +113,8 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    rss_feed: "https://www.occhisusalerno.it/feed/"
+    # RSS feed disabled - site blocks bots, use HTML parsing
+    # rss_feed: "https://www.occhisusalerno.it/feed/"
 
   - id: "positanonews"
     name: "Positano News"
@@ -136,7 +138,7 @@ sources:
     type: "wordpress"
     enabled: true
     priority: 1
-    rate_limit: 1.0
+    rate_limit: 2.0
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -144,7 +146,8 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    rss_feed: "https://www.positanonotizie.it/feed/"
+    # RSS feed disabled - site blocks bots, use HTML parsing
+    # rss_feed: "https://www.positanonotizie.it/feed/"
 
   - id: "ravellonotizie"
     name: "Ravello Notizie"
@@ -152,7 +155,7 @@ sources:
     type: "wordpress"
     enabled: true
     priority: 1
-    rate_limit: 1.0
+    rate_limit: 2.0
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -160,7 +163,8 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    rss_feed: "https://www.ravellonotizie.it/feed/"
+    # RSS feed disabled - site blocks bots, use HTML parsing
+    # rss_feed: "https://www.ravellonotizie.it/feed/"
 
   - id: "salernotoday"
     name: "Salerno Today"
@@ -168,7 +172,7 @@ sources:
     type: "custom"
     enabled: true
     priority: 2
-    rate_limit: 0.5
+    rate_limit: 2.0
     selectors:
       articles: ".notizia, .news-item, article"
       title: "h2.title, .news-title"
@@ -176,7 +180,7 @@ sources:
       content: ".testo, .news-content"
       image: ".img-notizia img, .news-image"
       link: "a.link-notizia"
-    notes: "Custom CMS - different structure from WordPress"
+    notes: "Custom CMS - may have bot protection, increased rate_limit delay"
 
 # Source Categories for Filtering
 categories:
