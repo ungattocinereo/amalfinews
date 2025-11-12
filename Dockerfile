@@ -3,24 +3,31 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for Pillow, lxml and other packages
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# Install minimal system dependencies in stages to reduce memory usage
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install build dependencies separately
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install library dependencies separately
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev \
     libxslt1-dev \
     zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install image processing libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     libpng-dev \
     libfreetype6-dev \
-    liblcms2-dev \
-    libopenjp2-7-dev \
-    libtiff-dev \
-    libwebp-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip, setuptools, wheel
@@ -31,6 +38,9 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Remove build dependencies to save space
+RUN apt-get purge -y --auto-remove gcc g++ make
 
 # Copy application code
 COPY . .
