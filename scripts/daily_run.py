@@ -48,7 +48,7 @@ async def main():
         sources = get_enabled_sources()
         logger.info(f"Checking {len(sources)} sources...")
 
-        checker = HealthChecker(timeout=5)
+        checker = HealthChecker(timeout=10)
         health_results = await checker.check_all_sources(sources)
 
         healthy_sources = [

@@ -154,7 +154,7 @@ async def check_sources_health():
     """Check health of all news sources"""
     try:
         sources = get_enabled_sources()
-        checker = HealthChecker(timeout=5)
+        checker = HealthChecker(timeout=10)
         results = await checker.check_all_sources(sources)
 
         health_status = []
