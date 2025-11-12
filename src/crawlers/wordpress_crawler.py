@@ -81,7 +81,7 @@ class WordPressCrawler(BaseCrawler):
                 logger.warning(f"{self.source.id}: No entries in RSS feed")
                 return events
 
-            for entry in feed.entries[:50]:  # Limit to 50 most recent
+            for entry in feed.entries[:10]:  # Limit to 10 most recent
                 try:
                     # Extract data
                     title = entry.get('title', '')
@@ -185,7 +185,7 @@ class WordPressCrawler(BaseCrawler):
                 return events
 
             parsed_count = 0
-            for article in articles[:50]:  # Limit to 50
+            for article in articles[:10]:  # Limit to 10 most recent
                 try:
                     # Extract title
                     title_selector = self.source.selectors.get('title', 'h2.entry-title')

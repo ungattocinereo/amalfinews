@@ -71,7 +71,7 @@ class CustomCrawler(BaseCrawler):
             return events
 
         parsed_count = 0
-        for article in articles[:50]:
+        for article in articles[:10]:  # Limit to 10 most recent
             try:
                 # Extract all fields using selectors
                 title = self.extract_text(article, self.source.selectors.get('title'))

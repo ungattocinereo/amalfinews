@@ -993,55 +993,81 @@ def create_realtime_dashboard() -> str:
             }
 
             function openTranslatedModal() {
-                openModal('translatedModal');
+                console.log('openTranslatedModal called');
+                try {
+                    openModal('translatedModal');
 
-                var bodyDiv = document.getElementById('translatedModalBody');
-                bodyDiv.innerHTML = '<div class="loading"><div class="spinner-small"></div><div>Loading translated events...</div></div>';
-
-                fetch('/api/events/translated?limit=50')
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data.events && data.events.length > 0) {
-                        var html = '';
-                        data.events.forEach(function(event) {
-                            html += renderEvent(event);
-                        });
-                        bodyDiv.innerHTML = html;
-                    } else {
-                        bodyDiv.innerHTML = '<div class="no-events">No translated events found</div>';
+                    var bodyDiv = document.getElementById('translatedModalBody');
+                    if (!bodyDiv) {
+                        console.error('translatedModalBody not found');
+                        return;
                     }
-                })
-                .catch(function(error) {
-                    bodyDiv.innerHTML = '<div class="no-events">Error loading events: ' + error.message + '</div>';
-                });
+                    bodyDiv.innerHTML = '<div class="loading"><div class="spinner-small"></div><div>Loading translated events...</div></div>';
+
+                    fetch('/api/events/translated?limit=50')
+                    .then(function(response) {
+                        console.log('Translated response:', response.status);
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        console.log('Translated data:', data);
+                        if (data.events && data.events.length > 0) {
+                            var html = '';
+                            data.events.forEach(function(event) {
+                                html += renderEvent(event);
+                            });
+                            bodyDiv.innerHTML = html;
+                        } else {
+                            bodyDiv.innerHTML = '<div class="no-events">No translated events found</div>';
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error loading translated events:', error);
+                        bodyDiv.innerHTML = '<div class="no-events">Error loading events: ' + error.message + '</div>';
+                    });
+                } catch (error) {
+                    console.error('Exception in openTranslatedModal:', error);
+                    alert('Error: ' + error.message);
+                }
             }
 
             function openApprovedModal() {
-                openModal('approvedModal');
+                console.log('openApprovedModal called');
+                try {
+                    openModal('approvedModal');
 
-                var bodyDiv = document.getElementById('approvedModalBody');
-                bodyDiv.innerHTML = '<div class="loading"><div class="spinner-small"></div><div>Loading approved events...</div></div>';
-
-                fetch('/api/events/approved?limit=50')
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data.events && data.events.length > 0) {
-                        var html = '';
-                        data.events.forEach(function(event) {
-                            html += renderEvent(event);
-                        });
-                        bodyDiv.innerHTML = html;
-                    } else {
-                        bodyDiv.innerHTML = '<div class="no-events">No approved events found</div>';
+                    var bodyDiv = document.getElementById('approvedModalBody');
+                    if (!bodyDiv) {
+                        console.error('approvedModalBody not found');
+                        return;
                     }
-                })
-                .catch(function(error) {
-                    bodyDiv.innerHTML = '<div class="no-events">Error loading events: ' + error.message + '</div>';
-                });
+                    bodyDiv.innerHTML = '<div class="loading"><div class="spinner-small"></div><div>Loading approved events...</div></div>';
+
+                    fetch('/api/events/approved?limit=50')
+                    .then(function(response) {
+                        console.log('Approved response:', response.status);
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        console.log('Approved data:', data);
+                        if (data.events && data.events.length > 0) {
+                            var html = '';
+                            data.events.forEach(function(event) {
+                                html += renderEvent(event);
+                            });
+                            bodyDiv.innerHTML = html;
+                        } else {
+                            bodyDiv.innerHTML = '<div class="no-events">No approved events found</div>';
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error loading approved events:', error);
+                        bodyDiv.innerHTML = '<div class="no-events">Error loading events: ' + error.message + '</div>';
+                    });
+                } catch (error) {
+                    console.error('Exception in openApprovedModal:', error);
+                    alert('Error: ' + error.message);
+                }
             }
 
             // Close modal when clicking outside
