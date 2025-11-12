@@ -437,6 +437,158 @@ def create_realtime_dashboard() -> str:
                 from { opacity: 0; transform: translateY(-10px); }
                 to { opacity: 1; transform: translateY(0); }
             }
+
+            /* Modal styles */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.7);
+                animation: fadeIn 0.3s ease;
+            }
+
+            .modal-content {
+                background: white;
+                margin: 50px auto;
+                padding: 0;
+                border-radius: 15px;
+                width: 90%;
+                max-width: 900px;
+                max-height: 85vh;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+
+            .modal-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 15px 15px 0 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .modal-header h2 {
+                margin: 0;
+                font-size: 1.5em;
+            }
+
+            .close-modal {
+                color: white;
+                font-size: 35px;
+                font-weight: bold;
+                cursor: pointer;
+                line-height: 1;
+                transition: transform 0.2s;
+            }
+
+            .close-modal:hover {
+                transform: scale(1.2);
+            }
+
+            .modal-body {
+                padding: 20px 30px;
+                overflow-y: auto;
+                flex: 1;
+            }
+
+            .event-item {
+                background: #f9fafb;
+                border-left: 4px solid #667eea;
+                padding: 20px;
+                margin-bottom: 15px;
+                border-radius: 8px;
+                transition: all 0.3s ease;
+            }
+
+            .event-item:hover {
+                background: #f3f4f6;
+                transform: translateX(5px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+
+            .event-title {
+                font-size: 1.2em;
+                font-weight: 600;
+                color: #667eea;
+                margin-bottom: 10px;
+            }
+
+            .event-title-it {
+                font-size: 0.95em;
+                color: #666;
+                font-style: italic;
+                margin-bottom: 10px;
+            }
+
+            .event-description {
+                color: #444;
+                line-height: 1.6;
+                margin-bottom: 15px;
+            }
+
+            .event-meta {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                font-size: 0.9em;
+                color: #666;
+            }
+
+            .event-meta-item {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .event-link {
+                color: #667eea;
+                text-decoration: none;
+                font-weight: 500;
+            }
+
+            .event-link:hover {
+                text-decoration: underline;
+            }
+
+            .clickable-card {
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .clickable-card:hover {
+                transform: translateY(-8px) scale(1.02);
+                box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            }
+
+            .no-events {
+                text-align: center;
+                padding: 40px;
+                color: #999;
+                font-size: 1.1em;
+            }
+
+            .loading {
+                text-align: center;
+                padding: 40px;
+                color: #667eea;
+            }
+
+            .spinner-small {
+                border: 3px solid rgba(102, 126, 234, 0.3);
+                border-radius: 50%;
+                border-top: 3px solid #667eea;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+            }
         </style>
     </head>
     <body>
@@ -455,16 +607,16 @@ def create_realtime_dashboard() -> str:
                     <div class="card-subtitle">From all sources</div>
                 </div>
 
-                <div class="card">
+                <div class="card clickable-card" onclick="openTranslatedModal()" title="Click to view translated events">
                     <div class="card-title">🌍 Translated</div>
                     <div class="card-value" id="translated-count">0</div>
-                    <div class="card-subtitle">English translations</div>
+                    <div class="card-subtitle">Click to view details</div>
                 </div>
 
-                <div class="card">
+                <div class="card clickable-card" onclick="openApprovedModal()" title="Click to view approved events">
                     <div class="card-title">✅ Approved</div>
                     <div class="card-value" id="approved-count">0</div>
-                    <div class="card-subtitle">Ready to publish</div>
+                    <div class="card-subtitle">Click to view details</div>
                 </div>
 
                 <div class="card">
@@ -552,6 +704,38 @@ def create_realtime_dashboard() -> str:
                         <div style="text-align: center; color: #999; padding: 20px;">
                             No errors
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Translated Events Modal -->
+        <div id="translatedModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🌍 Translated Events</h2>
+                    <span class="close-modal" onclick="closeModal('translatedModal')">&times;</span>
+                </div>
+                <div class="modal-body" id="translatedModalBody">
+                    <div class="loading">
+                        <div class="spinner-small"></div>
+                        <div>Loading translated events...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Events Modal -->
+        <div id="approvedModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✅ Approved Events</h2>
+                    <span class="close-modal" onclick="closeModal('approvedModal')">&times;</span>
+                </div>
+                <div class="modal-body" id="approvedModalBody">
+                    <div class="loading">
+                        <div class="spinner-small"></div>
+                        <div>Loading approved events...</div>
                     </div>
                 </div>
             </div>
@@ -760,6 +944,111 @@ def create_realtime_dashboard() -> str:
                     showStatus('❌ Error: ' + error.message, 'error');
                     setTimeout(function() { disableButtons(false); }, 1000);
                 });
+            }
+
+            // Modal functions
+            function openModal(modalId) {
+                document.getElementById(modalId).style.display = 'block';
+            }
+
+            function closeModal(modalId) {
+                document.getElementById(modalId).style.display = 'none';
+            }
+
+            function formatDate(dateStr) {
+                if (!dateStr) return 'N/A';
+                var date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+
+            function renderEvent(event) {
+                var html = '<div class="event-item">';
+                html += '<div class="event-title">' + (event.title_en || 'Untitled') + '</div>';
+                if (event.title_it) {
+                    html += '<div class="event-title-it">' + event.title_it + '</div>';
+                }
+                if (event.description) {
+                    html += '<div class="event-description">' + event.description + '</div>';
+                }
+                html += '<div class="event-meta">';
+                if (event.event_date) {
+                    html += '<div class="event-meta-item">📅 ' + formatDate(event.event_date) + '</div>';
+                }
+                if (event.location) {
+                    html += '<div class="event-meta-item">📍 ' + event.location + '</div>';
+                }
+                if (event.category) {
+                    html += '<div class="event-meta-item">🏷️ ' + event.category + '</div>';
+                }
+                if (event.source_url) {
+                    html += '<div class="event-meta-item"><a href="' + event.source_url + '" target="_blank" class="event-link">🔗 Source</a></div>';
+                }
+                html += '</div>';
+                html += '</div>';
+                return html;
+            }
+
+            function openTranslatedModal() {
+                openModal('translatedModal');
+
+                var bodyDiv = document.getElementById('translatedModalBody');
+                bodyDiv.innerHTML = '<div class="loading"><div class="spinner-small"></div><div>Loading translated events...</div></div>';
+
+                fetch('/api/events/translated?limit=50')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.events && data.events.length > 0) {
+                        var html = '';
+                        data.events.forEach(function(event) {
+                            html += renderEvent(event);
+                        });
+                        bodyDiv.innerHTML = html;
+                    } else {
+                        bodyDiv.innerHTML = '<div class="no-events">No translated events found</div>';
+                    }
+                })
+                .catch(function(error) {
+                    bodyDiv.innerHTML = '<div class="no-events">Error loading events: ' + error.message + '</div>';
+                });
+            }
+
+            function openApprovedModal() {
+                openModal('approvedModal');
+
+                var bodyDiv = document.getElementById('approvedModalBody');
+                bodyDiv.innerHTML = '<div class="loading"><div class="spinner-small"></div><div>Loading approved events...</div></div>';
+
+                fetch('/api/events/approved?limit=50')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.events && data.events.length > 0) {
+                        var html = '';
+                        data.events.forEach(function(event) {
+                            html += renderEvent(event);
+                        });
+                        bodyDiv.innerHTML = html;
+                    } else {
+                        bodyDiv.innerHTML = '<div class="no-events">No approved events found</div>';
+                    }
+                })
+                .catch(function(error) {
+                    bodyDiv.innerHTML = '<div class="no-events">Error loading events: ' + error.message + '</div>';
+                });
+            }
+
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                if (event.target.className === 'modal') {
+                    event.target.style.display = 'none';
+                }
             }
         </script>
     </body>

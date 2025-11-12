@@ -399,6 +399,94 @@ async def clear_all_database():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/events/translated")
+async def get_translated_events(limit: int = 50):
+    """Get translated events"""
+    try:
+        config = get_config()
+        db = get_database(config.database_path)
+
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, title_en, title_it, description_en, event_date,
+                       location, category, source_url, created_at
+                FROM processed_events
+                WHERE title_en IS NOT NULL AND title_en != ''
+                ORDER BY created_at DESC
+                LIMIT ?
+            """, (limit,))
+
+            rows = cursor.fetchall()
+
+        events = []
+        for row in rows:
+            events.append({
+                "id": row["id"],
+                "title_en": row["title_en"],
+                "title_it": row["title_it"],
+                "description": row["description_en"][:200] + "..." if len(row["description_en"]) > 200 else row["description_en"],
+                "event_date": row["event_date"],
+                "location": row["location"],
+                "category": row["category"],
+                "source_url": row["source_url"],
+                "created_at": row["created_at"]
+            })
+
+        return {
+            "count": len(events),
+            "events": events
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get translated events: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/events/approved")
+async def get_approved_events(limit: int = 50):
+    """Get approved events"""
+    try:
+        config = get_config()
+        db = get_database(config.database_path)
+
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, title_en, title_it, description_en, event_date,
+                       location, category, source_url, created_at, status
+                FROM processed_events
+                WHERE status = 'approved'
+                ORDER BY created_at DESC
+                LIMIT ?
+            """, (limit,))
+
+            rows = cursor.fetchall()
+
+        events = []
+        for row in rows:
+            events.append({
+                "id": row["id"],
+                "title_en": row["title_en"],
+                "title_it": row["title_it"],
+                "description": row["description_en"][:200] + "..." if len(row["description_en"]) > 200 else row["description_en"],
+                "event_date": row["event_date"],
+                "location": row["location"],
+                "category": row["category"],
+                "source_url": row["source_url"],
+                "created_at": row["created_at"]
+            })
+
+        return {
+            "count": len(events),
+            "events": events
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get approved events: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
