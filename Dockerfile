@@ -39,7 +39,10 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Remove build dependencies to save space
+# Install Playwright browsers (Chromium only for efficiency)
+RUN playwright install --with-deps chromium
+
+# Remove build dependencies to save space (keep playwright dependencies)
 RUN apt-get purge -y --auto-remove gcc g++ make
 
 # Copy application code

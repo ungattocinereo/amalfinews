@@ -46,6 +46,7 @@ class SourceConfig:
     selectors: Dict[str, str] = field(default_factory=dict)
     rss_feed: Optional[str] = None
     notes: Optional[str] = None
+    use_playwright: bool = False  # Use headless browser for bot-protected sites
 
 
 @dataclass

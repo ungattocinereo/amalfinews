@@ -75,6 +75,9 @@ async def main():
             max_concurrent=3
         )
 
+        # Cleanup Playwright resources
+        await crawler_manager.cleanup()
+
         # Save raw events to database
         all_events = crawler_manager.get_all_events(crawl_results)
         logger.info(f"Scraped {len(all_events)} total events")

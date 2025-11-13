@@ -89,6 +89,7 @@ sources:
     enabled: true
     priority: 2
     rate_limit: 2.0
+    use_playwright: true  # Site has bot protection, requires browser
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -96,7 +97,7 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    # RSS feed disabled - site blocks bots, use HTML parsing
+    # RSS feed disabled - site blocks bots
     # rss_feed: "https://www.maiorinews.it/feed/"
 
   - id: "occhisusalerno"
@@ -106,6 +107,7 @@ sources:
     enabled: true
     priority: 2
     rate_limit: 2.0
+    use_playwright: true  # Site has bot protection, requires browser
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -113,7 +115,7 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    # RSS feed disabled - site blocks bots, use HTML parsing
+    # RSS feed disabled - site blocks bots
     # rss_feed: "https://www.occhisusalerno.it/feed/"
 
   - id: "positanonews"
@@ -139,6 +141,7 @@ sources:
     enabled: true
     priority: 1
     rate_limit: 2.0
+    use_playwright: true  # Site has bot protection, requires browser
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -146,7 +149,7 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    # RSS feed disabled - site blocks bots, use HTML parsing
+    # RSS feed disabled - site blocks bots
     # rss_feed: "https://www.positanonotizie.it/feed/"
 
   - id: "ravellonotizie"
@@ -156,6 +159,7 @@ sources:
     enabled: true
     priority: 1
     rate_limit: 2.0
+    use_playwright: true  # Site has bot protection, requires browser
     selectors:
       articles: ".post, article"
       title: "h2.entry-title"
@@ -163,7 +167,7 @@ sources:
       content: ".entry-content"
       image: ".wp-post-image"
       link: "a.entry-title"
-    # RSS feed disabled - site blocks bots, use HTML parsing
+    # RSS feed disabled - site blocks bots
     # rss_feed: "https://www.ravellonotizie.it/feed/"
 
   - id: "salernotoday"
@@ -173,6 +177,7 @@ sources:
     enabled: true
     priority: 2
     rate_limit: 2.0
+    use_playwright: true  # Site has bot protection, requires browser
     selectors:
       articles: ".notizia, .news-item, article"
       title: "h2.title, .news-title"
@@ -180,7 +185,7 @@ sources:
       content: ".testo, .news-content"
       image: ".img-notizia img, .news-image"
       link: "a.link-notizia"
-    notes: "Custom CMS - may have bot protection, increased rate_limit delay"
+    notes: "Custom CMS - bot protection requires Playwright"
 
 # Source Categories for Filtering
 categories:

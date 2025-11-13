@@ -150,7 +150,8 @@ class ConfigLoader:
                 rate_limit=source_data.get('rate_limit', 1.0),
                 selectors=source_data.get('selectors', {}),
                 rss_feed=source_data.get('rss_feed'),
-                notes=source_data.get('notes')
+                notes=source_data.get('notes'),
+                use_playwright=source_data.get('use_playwright', False)
             ))
 
         return sources

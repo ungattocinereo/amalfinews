@@ -10,6 +10,7 @@ from datetime import datetime
 from src.core.models import SourceConfig, SourceType, RawEvent, CrawlerResult
 from src.crawlers.wordpress_crawler import WordPressCrawler
 from src.crawlers.custom_crawler import CustomCrawler
+from src.crawlers.playwright_crawler import PlaywrightCrawler
 from src.monitoring.progress_tracker import progress_tracker
 
 
@@ -26,7 +27,12 @@ class CrawlerManager:
 
     def create_crawler(self, source: SourceConfig):
         """Create appropriate crawler for source type"""
-        if source.type == SourceType.WORDPRESS:
+        # Use Playwright for sources with bot protection
+        if source.use_playwright:
+            logger.info(f"{source.id}: Using Playwright (bot protection detected)")
+            return PlaywrightCrawler(source, self.timeout, self.user_agent)
+        # Otherwise use standard crawlers
+        elif source.type == SourceType.WORDPRESS:
             return WordPressCrawler(source, self.timeout, self.user_agent)
         else:
             return CustomCrawler(source, self.timeout, self.user_agent)
@@ -122,3 +128,11 @@ class CrawlerManager:
                 all_events.extend(result.events)
 
         return all_events
+
+    async def cleanup(self):
+        """Cleanup resources (close Playwright browser if used)"""
+        try:
+            await PlaywrightCrawler.close_browser()
+            logger.info("Crawler manager cleanup complete")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
