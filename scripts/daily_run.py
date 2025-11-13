@@ -16,8 +16,7 @@ from src.core.database import get_database
 from src.crawlers.health_check import HealthChecker
 from src.crawlers.manager import CrawlerManager
 from src.llm.deepseek_client import DeepSeekClient
-from src.llm.filter import EventFilter
-from src.llm.translator import EventTranslator
+from src.llm.batch_processor import BatchArticleProcessor
 
 # Setup logging
 logging.basicConfig(
@@ -78,23 +77,16 @@ async def main():
         # Cleanup Playwright resources
         await crawler_manager.cleanup()
 
-        # Save raw events to database
+        # Extract all events
         all_events = crawler_manager.get_all_events(crawl_results)
-        logger.info(f"Scraped {len(all_events)} total events")
-
-        for event in all_events:
-            try:
-                event_id = db.insert_raw_event(event)
-                event.id = event_id
-            except Exception as e:
-                logger.error(f"Error saving event: {e}")
+        logger.info(f"Scraped {len(all_events)} total articles")
 
         if not all_events:
-            logger.warning("⚠️ No events scraped. Ending run.")
+            logger.warning("⚠️ No articles scraped. Ending run.")
             return
 
-        # ===== STAGE 3: LLM Filtering =====
-        logger.info("\n📋 Stage 3: AI Filtering")
+        # ===== STAGE 3: Save Raw Articles =====
+        logger.info("\n📋 Stage 3: Saving Raw Articles")
 
         deepseek_client = DeepSeekClient(
             api_key=config.deepseek_api_key,
@@ -105,47 +97,48 @@ async def main():
             timeout=config.deepseek_timeout
         )
 
-        event_filter = EventFilter(deepseek_client)
-        filter_result = await event_filter.batch_filter_events(
-            all_events,
-            batch_size=config.batch_size
-        )
+        batch_processor = BatchArticleProcessor(deepseek_client)
+        raw_file = batch_processor.save_raw_articles(all_events, output_dir="./data/raw")
 
-        relevant_events = event_filter.get_relevant_events(all_events, filter_result)
-        logger.info(f"✅ {len(relevant_events)}/{len(all_events)} events passed filter")
+        if raw_file:
+            logger.info(f"✅ Raw articles saved to: {raw_file}")
 
-        if not relevant_events:
-            logger.warning("⚠️ No relevant events found. Ending run.")
+        # ===== STAGE 4: Batch AI Processing =====
+        logger.info("\n📋 Stage 4: AI Batch Processing (Filter + Translate)")
+
+        processed_events = await batch_processor.process_batch(all_events)
+
+        if not processed_events:
+            logger.warning("⚠️ No tourist-relevant events found after AI analysis.")
+            logger.info(f"Processed 0/{len(all_events)} articles successfully")
             return
 
-        # ===== STAGE 4: Translation =====
-        logger.info("\n📋 Stage 4: Translation to English")
+        logger.info(f"✅ {len(processed_events)}/{len(all_events)} articles identified as tourist-relevant events")
 
-        translator = EventTranslator(deepseek_client)
-        processed_events = await translator.translate_multiple(
-            relevant_events,
-            max_concurrent=5
-        )
+        # ===== STAGE 5: Save Processed Events =====
+        logger.info("\n📋 Stage 5: Saving Processed Events")
 
-        logger.info(f"✅ {len(processed_events)} events translated successfully")
+        output_file = batch_processor.save_to_file(processed_events, output_dir="./data/processed")
 
-        # Save processed events
-        for event in processed_events:
-            try:
-                event_id = db.insert_processed_event(event)
-                logger.info(f"Saved processed event {event_id}: {event.title_en}")
-            except Exception as e:
-                logger.error(f"Error saving processed event: {e}")
+        if output_file:
+            logger.info(f"✅ Processed events saved to: {output_file}")
 
-        # Mark raw events as processed
-        for event in relevant_events:
-            db.mark_raw_event_processed(event.id, "Filtered and translated")
+            # Print sample of results
+            logger.info("\n📋 Sample Results (first 3 events):")
+            for i, event in enumerate(processed_events[:3], 1):
+                logger.info(f"\n--- Event {i} ---")
+                logger.info(f"Title: {event['title']}")
+                logger.info(f"URL: {event['source_url']}")
+                logger.info(f"Category: {event.get('category', 'N/A')}")
+                logger.info(f"Date: {event.get('event_date', 'N/A')}")
+                logger.info(f"Content: {event['content'][:150]}...")
 
-        # ===== STAGE 5: Events ready for moderation =====
-        logger.info("\n📋 Stage 5: Events ready")
-        logger.info(f"✅ {len(processed_events)} events waiting in database")
-        logger.info("📱 Check Telegram bot to review and moderate events")
-        logger.info("💡 Approved events can be published manually from database")
+        # ===== STAGE 6: Summary =====
+        logger.info("\n📋 Stage 6: Results Ready")
+        logger.info(f"✅ {len(processed_events)} tourist-relevant events processed")
+        logger.info(f"📁 Raw articles: {raw_file}")
+        logger.info(f"📁 Processed events: {output_file}")
+        logger.info("💡 Events are ready for review and publishing")
 
         # ===== FINAL SUMMARY =====
         duration = (datetime.now() - start_time).total_seconds()
@@ -156,14 +149,14 @@ async def main():
         logger.info(f"Duration: {duration:.1f}s ({duration/60:.1f} minutes)")
         logger.info(f"Sources checked: {len(sources)}")
         logger.info(f"Healthy sources: {len(healthy_sources)}")
-        logger.info(f"Events scraped: {len(all_events)}")
-        logger.info(f"Events filtered: {len(relevant_events)}")
-        logger.info(f"Events translated: {len(processed_events)}")
+        logger.info(f"Articles scraped: {len(all_events)}")
+        logger.info(f"Tourist events found: {len(processed_events)}")
+        logger.info(f"Conversion rate: {len(processed_events)/len(all_events)*100:.1f}%")
 
         # API usage
         usage = deepseek_client.get_total_usage()
-        logger.info(f"DeepSeek calls: {usage['total_calls']}")
-        logger.info(f"DeepSeek tokens: {usage['total_tokens']}")
+        logger.info(f"DeepSeek API calls: {usage['total_calls']}")
+        logger.info(f"DeepSeek tokens used: {usage['total_tokens']}")
         logger.info(f"DeepSeek cost: ${usage['total_cost']:.3f}")
 
         logger.info("="*60)

@@ -2,7 +2,47 @@
 # Version: 4.0
 
 prompts:
-  # Stage 1: Batch Filtering
+  # NEW: Batch Filter + Translate (All in One)
+  batch_filter_translate:
+    version: "4.0"
+    description: "Batch analyze, filter and translate Italian articles for tourists in one pass"
+    system_message: "You are an expert in Italian tourism content curation for the Amalfi Coast. Analyze news articles, identify tourist-relevant events, and translate them to English."
+    user_template: |
+      Analyze these {count} Italian news articles from Amalfi Coast sources.
+
+      **Your task:**
+      1. Identify articles about TOURIST-RELEVANT events (festivals, concerts, markets, exhibitions, food events, cultural activities)
+      2. EXCLUDE: religious services, political meetings, administrative news, past events, local sports
+      3. For RELEVANT articles: translate to English and format for international tourists
+
+      **Articles to process:**
+      {articles_json}
+
+      **Today's date:** {today_date}
+
+      **Output Format (JSON array):**
+      [
+        {{
+          "source_url": "https://...",
+          "title": "Event Title in English",
+          "content": "Clear, engaging description in simple English (100-200 words). Include: what is it, when, where, why tourists should care, practical info (how to get there, price if known).",
+          "event_date": "YYYY-MM-DD",
+          "location": "Venue, Town Name",
+          "category": "cultural|food|festival|nature|market|music|other"
+        }}
+      ]
+
+      **Guidelines:**
+      - Use B1-level English (simple and clear)
+      - Focus on tourist experience, not local news
+      - Add context for foreigners (e.g., "Ravello is a hilltop town above Amalfi, reachable by SITA bus")
+      - Include practical details: time, price, accessibility
+      - Only include FUTURE events
+      - Skip articles that are: news reports, politics, administration, past events, religious services
+
+      **Return ONLY valid JSON array.** Empty array [] if no relevant articles found.
+
+  # Stage 1: Batch Filtering (OLD - kept for reference)
   batch_filter:
     version: "3.0"
     description: "Filter Italian articles to identify tourist-relevant events"
